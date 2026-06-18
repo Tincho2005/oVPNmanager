@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>oVPNmanager - OpenVPN Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css?v=20260617-i18n">
+</head>
+<body>
+    <!-- Background Animated Blobs -->
+    <div class="blob-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <!-- Login Container -->
+    <div id="login-container" class="container auth-container">
+        <div class="glass-card login-card animate-fade-in">
+            <div class="login-header">
+                <div class="logo">
+                    <i data-lucide="shield-alert" class="logo-icon text-glow-cyan"></i>
+                    <h1>oVPN<span>manager</span></h1>
+                </div>
+                <div class="auth-top-actions">
+                    <div class="language-switch" role="group" aria-label="Language">
+                        <button type="button" class="language-option" data-lang-option="es">ES</button>
+                        <button type="button" class="language-option active" data-lang-option="en">EN</button>
+                    </div>
+                </div>
+                <p data-i18n="login.subtitle">OpenVPN Server Administration</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="password" data-i18n="login.passwordLabel">Administrator Password</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+                <div id="login-error" class="error-text hidden">
+                    <i data-lucide="alert-circle" class="error-icon"></i>
+                    <span id="error-message"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="login-btn">
+                    <span data-i18n="login.submit">Sign In</span>
+                    <i data-lucide="log-in"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container (Hidden initially) -->
+    <div id="dashboard-container" class="container dashboard-container hidden">
+        <!-- Header -->
+        <header class="glass-card header-bar">
+            <div class="logo">
+                <i data-lucide="shield" class="logo-icon text-glow-cyan"></i>
+                <h2>oVPN<span>manager</span></h2>
+            </div>
+            <div class="header-actions">
+                <div class="language-switch" role="group" aria-label="Language">
+                    <button type="button" class="language-option" data-lang-option="es">ES</button>
+                    <button type="button" class="language-option active" data-lang-option="en">EN</button>
+                </div>
+                <div class="status-indicator-wrapper">
+                    <span class="status-dot online" id="server-status-dot"></span>
+                    <span class="status-text" id="server-status-text" data-i18n="status.detecting">Detecting...</span>
+                </div>
+                <button id="logout-btn" class="btn btn-secondary btn-icon" title="Sign Out" data-i18n-title="actions.logout">
+                    <i data-lucide="log-out"></i>
+                    <span data-i18n="actions.exit">Exit</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="stats-grid">
+            <div class="glass-card stat-card">
+                <div class="stat-icon-wrapper bg-cyan-glow">
+                    <i data-lucide="activity" class="stat-icon text-cyan"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 data-i18n="stats.serviceTitle">Service Status</h3>
+                    <p id="stat-service" data-i18n="status.active">Active</p>
+                    <span class="stat-sub" id="stat-service-sub">OpenVPN Server Daemon</span>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card">
+                <div class="stat-icon-wrapper bg-emerald-glow">
+                    <i data-lucide="users" class="stat-icon text-emerald"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 data-i18n="stats.connectionsTitle">Active Connections</h3>
+                    <p id="stat-active">0</p>
+                    <span class="stat-sub" id="stat-active-sub" data-i18n="stats.connectionsSub">Users connected now</span>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card">
+                <div class="stat-icon-wrapper bg-violet-glow">
+                    <i data-lucide="cpu" class="stat-icon text-violet"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 data-i18n="stats.cpuTitle">CPU Load</h3>
+                    <p id="stat-cpu">0%</p>
+                    <span class="stat-sub" id="stat-cpu-sub" data-i18n="stats.cpuSub">Processor usage</span>
+                </div>
+            </div>
+
+            <div class="glass-card stat-card">
+                <div class="stat-icon-wrapper bg-amber-glow">
+                    <i data-lucide="database" class="stat-icon text-amber"></i>
+                </div>
+                <div class="stat-details">
+                    <h3 data-i18n="stats.ramTitle">RAM Memory</h3>
+                    <p id="stat-ram">0%</p>
+                    <span class="stat-sub" id="stat-ram-sub" data-i18n="stats.ramSub">System memory usage</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Telemetry Row (Live Bandwidth Chart) -->
+        <section class="chart-section">
+            <div class="glass-card chart-card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i data-lucide="line-chart" class="card-header-icon text-cyan"></i>
+                        <h3 data-i18n="bandwidth.title">Network Bandwidth (Live)</h3>
+                    </div>
+                    <div class="chart-legend">
+                        <span class="legend-item"><span class="legend-dot download"></span><span data-i18n="bandwidth.download">Download (RX)</span></span>
+                        <span class="legend-item"><span class="legend-dot upload"></span><span data-i18n="bandwidth.upload">Upload (TX)</span></span>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bandwidth-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clients Section -->
+        <section class="clients-section">
+            <div class="glass-card clients-card">
+                <div class="card-header flex-between">
+                    <div class="card-title">
+                        <i data-lucide="key-round" class="card-header-icon text-violet"></i>
+                        <h3 data-i18n="clients.title">Users and Credentials</h3>
+                    </div>
+                    <button class="btn btn-primary" id="btn-open-create-modal">
+                        <i data-lucide="plus"></i>
+                        <span data-i18n="clients.createUser">Create User</span>
+                    </button>
+                </div>
+
+                <!-- Client List Controls -->
+                <div class="controls-bar">
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="client-search" placeholder="Search user by name..." data-i18n-placeholder="clients.searchPlaceholder">
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all" data-i18n="filters.all">All</button>
+                        <button class="filter-tab" data-filter="connected" data-i18n="filters.connected">Connected</button>
+                        <button class="filter-tab" data-filter="active" data-i18n="filters.active">Enabled</button>
+                        <button class="filter-tab" data-filter="revoked" data-i18n="filters.revoked">Revoked</button>
+                    </div>
+                </div>
+
+                <!-- Clients Table Container -->
+                <div class="table-container">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th data-i18n="table.user">User</th>
+                                <th data-i18n="table.status">Status</th>
+                                <th data-i18n="table.virtualIp">Virtual IP</th>
+                                <th data-i18n="table.publicIp">Public IP</th>
+                                <th data-i18n="table.traffic">Received/Sent Traffic</th>
+                                <th data-i18n="table.connectionExpiration">Connection / Expiration</th>
+                                <th class="text-center" data-i18n="table.actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-table-body">
+                            <!-- Dynamically populated -->
+                            <tr>
+                                <td colspan="7" class="loading-td">
+                                    <div class="skeleton-loader" data-i18n="clients.loading">Loading users...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Create User Modal -->
+    <div id="create-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-card animate-zoom-in">
+            <div class="modal-header">
+                <h3 data-i18n="modal.createTitle">Create New User</h3>
+                <button class="btn-close-modal" id="btn-close-create-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="create-user-form">
+                <div class="modal-body">
+                    <p class="modal-desc" data-i18n="modal.createDesc">The script will generate a new cryptographic key and compile the matching configuration profile (.ovpn).</p>
+                    <div class="form-group">
+                        <label for="new-username" data-i18n="modal.clientName">Client Name</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="user" class="input-icon"></i>
+                            <input type="text" id="new-username" placeholder="e.g. john_laptop" required pattern="^[a-zA-Z0-9_-]+$" title="Only letters, numbers, dashes, and underscores." data-i18n-placeholder="modal.usernamePlaceholder" data-i18n-title="modal.usernameTitle">
+                        </div>
+                        <span class="input-hint" data-i18n="modal.usernameHint">Only alphanumeric characters, dashes, and underscores are allowed (no spaces).</span>
+                    </div>
+                    <div id="create-error" class="error-text hidden">
+                        <i data-lucide="alert-circle" class="error-icon"></i>
+                        <span id="create-error-message"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-create-modal" data-i18n="actions.cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-create-user">
+                        <span data-i18n="actions.generateProfile">Generate Profile</span>
+                        <i data-lucide="check"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Revoke Modal -->
+    <div id="revoke-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-card animate-zoom-in border-danger">
+            <div class="modal-header">
+                <h3 class="text-danger" data-i18n="modal.revokeTitle">Confirm Revocation</h3>
+                <button class="btn-close-modal" id="btn-close-revoke-modal">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-alert">
+                    <i data-lucide="alert-triangle" class="warning-icon text-danger"></i>
+                    <div>
+                        <p class="warning-title"><span data-i18n="modal.revokeQuestionPrefix">Are you sure you want to revoke</span> <span id="revoke-client-display" class="font-bold"></span>?</p>
+                        <p class="warning-desc" data-i18n="modal.revokeDesc">This action permanently invalidates the SSL/TLS certificate on the server. The user will lose connection immediately and will not be able to reconnect with this profile. The .ovpn file will be deleted.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-revoke-modal" data-i18n="actions.cancel">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-revoke">
+                    <span data-i18n="actions.revokeAccess">Revoke Access</span>
+                    <i data-lucide="trash-2"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Notifications / Toast -->
+    <div id="toast" class="toast hidden">
+        <i id="toast-icon" data-lucide="info"></i>
+        <span id="toast-message" data-i18n="toast.notification">Notification</span>
+    </div>
+
+    <!-- Custom Script -->
+    <script src="app.js?v=20260617-i18n"></script>
+</body>
+</html>

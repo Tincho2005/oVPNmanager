@@ -25,11 +25,11 @@ jobs:
           DEPLOY_DIR="${{ github.workspace }}"
           
           if [ ! -f .env ]; then
-            cat > .env << EOF
-ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-SERVER_PUBLIC_IP=${{ secrets.SERVER_PUBLIC_IP }}
-EOF
+            printf '%s\n' \
+              "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" \
+              "JWT_SECRET=${{ secrets.JWT_SECRET }}" \
+              "SERVER_PUBLIC_IP=${{ secrets.SERVER_PUBLIC_IP }}" \
+              > .env
           fi
           
           docker compose up -d --build

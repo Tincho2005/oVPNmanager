@@ -1,0 +1,23 @@
+services:
+  ovpnmanager:
+    build: .
+    volumes:
+      - /etc/openvpn:/etc/openvpn
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - JWT_SECRET=${JWT_SECRET:-ovpn-manager-jwt-secret-key-change-me-123456789}
+      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-}
+    restart: unless-stopped
+
+  caddy:
+    build: ./caddy
+    volumes:
+      - ovpn-ssl-certs:/certs
+    depends_on:
+      - ovpnmanager
+    restart: unless-stopped
+
+volumes:
+  ovpn-ssl-certs:

@@ -2,7 +2,7 @@ const path = require('path');
 require('dotenv').config();
 
 module.exports = {
-  port: process.env.PORT || 8080,
+  port: process.env.PORT || 3000,
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123', // Admin password for login
   jwtSecret: process.env.JWT_SECRET || 'ovpn-manager-jwt-secret-key-change-me-123456789',
   jwtExpiry: '2h', // Session token duration

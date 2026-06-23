@@ -1,0 +1,52 @@
+name: Deploy oVPNmanager
+on:
+  push:
+    branches: [ main ]
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy con Docker Compose
+        run: |
+          set -e
+          
+          # Asegurar que Docker Compose esté disponible
+          if ! command -v docker &> /dev/null; then
+            echo "Docker no está instalado. Instalando..."
+            curl -fsSL https://get.docker.com | sh
+          fi
+          
+          if ! docker compose version &> /dev/null; then
+            echo "Docker Compose no está instalado. Instalando..."
+            curl -fsSL https://get.docker.com | sh
+          fi
+          
+          # Directorio de despliegue (debe coincidir con donde está clonado el repo)
+          DEPLOY_DIR="${{ github.workspace }}"
+          
+          # Generar archivo .env desde secretos si no existe
+          if [ ! -f .env ]; then
+            cat > .env << EOF
+ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+JWT_SECRET=${{ secrets.JWT_SECRET }}
+SERVER_PUBLIC_IP=${{ secrets.SERVER_PUBLIC_IP }}
+EOF
+          fi
+          
+          # Rebuild y levantar servicios
+          docker compose up -d --build
+          
+          # Esperar a que Caddy genere/verifique cert y levante
+          sleep 15
+          
+          # Healthcheck final (acceso interno al contenedor)
+          CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -q --filter "name=caddy") 2>/dev/null || echo "")
+          if [ -n "$CONTAINER_IP" ]; then
+            curl -sk https://$CONTAINER_IP:8843/api/auth/session > /dev/null 2>&1 && echo "Despliegue exitoso" || (echo "Fallo en healthcheck" && docker compose logs --tail=100 && exit 1)
+          else
+            echo "No se pudo obtener IP del contenedor Caddy"
+            docker compose logs --tail=100
+            exit 1
+          fi

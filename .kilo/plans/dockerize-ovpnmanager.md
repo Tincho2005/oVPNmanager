@@ -470,11 +470,9 @@ jobs:
           
           # Generar archivo .env desde secretos si no existe
           if [ ! -f .env ]; then
-            cat > .env << EOF
-ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-SERVER_PUBLIC_IP=${{ secrets.SERVER_PUBLIC_IP }}
-EOF
+            echo "ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}" > .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "SERVER_PUBLIC_IP=${{ secrets.SERVER_PUBLIC_IP }}" >> .env
           fi
           
           # Rebuild y levantar servicios

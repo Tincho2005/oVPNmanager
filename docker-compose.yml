@@ -2,7 +2,9 @@ services:
   ovpnmanager:
     build: .
     volumes:
-      - /etc/openvpn:/etc/openvpn
+      - /etc/openvpn:/etc/openvpn:rw
+    pid: host
+    network_mode: host
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -15,6 +17,7 @@ services:
     build: ./caddy
     volumes:
       - ovpn-ssl-certs:/certs
+    network_mode: host
     depends_on:
       - ovpnmanager
     restart: unless-stopped

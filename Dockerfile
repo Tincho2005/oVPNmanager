@@ -1,10 +1,21 @@
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
-FROM node:24-alpine
-RUN apk add --no-cache bash curl wget iproute2
+FROM node:24-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    curl \
+    wget \
+    iproute2 \
+    gawk \
+    sed \
+    procps \
+    psmisc \
+    findutils \
+    openssl \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .

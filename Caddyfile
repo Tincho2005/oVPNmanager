@@ -2,7 +2,7 @@
   tls /certs/fullchain.pem /certs/privkey.pem {
     protocols tls1.2 tls1.3
   }
-  reverse_proxy ovpnmanager:3000 {
+  reverse_proxy localhost:3000 {
     header_up X-Forwarded-Proto {scheme}
     header_up X-Forwarded-For {remote_host}
   }
